@@ -9,6 +9,9 @@ print("Chargement CSV...")  # <- ici
 df = pd.read_csv("/home/ubuntu/vix_data.csv", names=["timestamp", "VIX"])
 df["timestamp"] = pd.to_datetime(df["timestamp"], format="ISO8601", utc=True)
 
+# Filtre les valeurs ou le marché est ouvert.
+df = df[df["timestamp"].dt.hour.between(13, 20)]
+
 print("Chargement rapport...")  # <- ici
 report_path = Path("/home/ubuntu/daily_report.txt")
 if report_path.exists():
