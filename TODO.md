@@ -1,0 +1,4 @@
+- [x] Création du dashboard
+- [x] Génération du rapport quotidien
+- [ ] Ajout de tests unitaires
+- [ ] Dockerisation du projet
