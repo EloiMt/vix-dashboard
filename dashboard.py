@@ -6,15 +6,25 @@ import plotly.graph_objects as go
 from pathlib import Path
 import datetime
 import pytz
+from pandas.tseries.holiday import USFederalHolidayCalendar
 
-# Chargement initial des données
+# -------- Chargement et filtrage avancé -------- #
 def load_data():
     df = pd.read_csv("/home/ubuntu/vix_data.csv", names=["timestamp", "VIX"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], format="ISO8601", utc=True)
-    df = df[df["timestamp"].dt.hour.between(13, 20)]
+
+    # Filtrer : heures marché US (13h–20h UTC), jours ouvrés (lun–ven), pas jours fériés
+    calendar = USFederalHolidayCalendar()
+    holidays = calendar.holidays(start=df["timestamp"].min(), end=df["timestamp"].max())
+
+    df = df[
+        (df["timestamp"].dt.hour.between(13, 20)) &
+        (df["timestamp"].dt.weekday < 5) &
+        (~df["timestamp"].dt.normalize().isin(holidays))
+    ]
     return df
 
-# Chargement du rapport quotidien
+# -------- Rapport quotidien -------- #
 report_path = Path("/home/ubuntu/daily_report.txt")
 if report_path.exists():
     with open(report_path, "r") as file:
@@ -22,12 +32,12 @@ if report_path.exists():
 else:
     daily_report = "No report generated yet."
 
-# Initialisation de Dash
+# -------- App initialisation -------- #
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
+# -------- Layout -------- #
 app.layout = html.Div([
-    # Ticker défilant en haut
     html.Div(id="ticker", style={
         "backgroundColor": "#FFD700",
         "color": "black",
@@ -43,7 +53,6 @@ app.layout = html.Div([
     dcc.Interval(id="time-interval", interval=60*1000, n_intervals=0),
     dcc.Interval(id="update-graph", interval=5*60*1000, n_intervals=0),
 
-    # Heures et switch de thème
     html.Div([
         html.Div(id="paris-ny-time", style={
             "fontSize": "18px",
@@ -66,7 +75,6 @@ app.layout = html.Div([
         ], style={"textAlign": "center", "marginBottom": "20px"})
     ]),
 
-    # Sélecteur de granularité
     html.Div([
         html.Label("Vue :", style={"marginRight": "10px", "color": "white"}),
         dcc.RadioItems(
@@ -82,7 +90,6 @@ app.layout = html.Div([
         )
     ], style={"textAlign": "center", "marginBottom": "20px"}),
 
-    # Graphique et infos du pic
     html.Div([
         html.Div([
             dcc.Graph(id="vix-graph")
@@ -107,7 +114,6 @@ app.layout = html.Div([
         ], className="col-md-4")
     ], className="row", style={"margin": "auto", "width": "95%"}),
 
-    # Rapport
     html.H2("📝 Rapport Quotidien (20h)", style={"textAlign": "center", "color": "#FF6361"}),
     html.Pre(daily_report, style={
         "whiteSpace": "pre-wrap",
@@ -120,7 +126,8 @@ app.layout = html.Div([
     })
 ], style={"backgroundColor": "#1e1e1e", "padding": "20px", "minHeight": "100vh"})
 
-# Callback : mise à jour du graphique et des infos
+# -------- Callbacks -------- #
+
 @app.callback(
     Output("vix-graph", "figure"),
     Output("pic-info", "children"),
@@ -175,7 +182,6 @@ def update_graph(n, theme, timeframe):
 
     return fig, pic_info
 
-# Callback : mise à jour du ticker
 @app.callback(
     Output("ticker", "children"),
     Input("update-graph", "n_intervals")
@@ -185,9 +191,8 @@ def update_ticker(n):
     last_val = df.iloc[-1]["VIX"]
     max_val = df["VIX"].max()
     min_val = df["VIX"].min()
-    return f"🔥 Dernier VIX : {last_val:.2f} | 📈 Max : {max_val:.2f} | 📉 Min : {min_val:.2f} (sur les heures de marché)"
+    return f"🔥 Dernier VIX : {last_val:.2f} | 📈 Max : {max_val:.2f} | 📉 Min : {min_val:.2f} (pendant heures de marché)"
 
-# Callback : mise à jour heure Paris / New York
 @app.callback(
     Output("paris-ny-time", "children"),
     Input("time-interval", "n_intervals")
@@ -197,7 +202,7 @@ def update_times(n):
     ny = datetime.datetime.now(pytz.timezone("America/New_York")).strftime("%H:%M:%S")
     return f"Heure à Paris 🕒 : {paris}  |  Heure à New York 🕒 : {ny}"
 
-# Animation CSS du ticker
+# -------- CSS pour ticker -------- #
 app.index_string = '''
 <!DOCTYPE html>
 <html>
@@ -224,6 +229,7 @@ app.index_string = '''
 </html>
 '''
 
+# -------- Exécution -------- #
 if __name__ == "__main__":
     app.run_server(debug=True, host="0.0.0.0", port=8050)
 
