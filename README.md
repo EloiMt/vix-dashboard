@@ -6,10 +6,6 @@ Mise à jour automatique toutes les 5 minutes
 Rapport quotidien à 20h
 Dashboard web
 
-## Auteurs
-Eloi Martin	
-Ahmed Mili 
----
 
 ## 🔧 Features
 
@@ -35,3 +31,7 @@ Ahmed Mili
 
 ```bash
 python3 dashboard.py
+
+## Auteurs
+Eloi Martin
+Ahmed Mili
