@@ -43,3 +43,4 @@ report_path=~/daily_report.txt
     echo "📊 Volatility (σ): $volatility"
 } > "$report_path"
 
+# Nettoyage à prévoir ici
