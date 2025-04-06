@@ -1,0 +1,8 @@
+📈 Daily VIX Report for 2025-04-04
+
+📌 Open:      43.87
+📌 Close:     45.31
+📌 High:      45.61
+📌 Low:       43.51
+📉 Change:    3.28 %
+📊 Volatility (σ): 2.10
